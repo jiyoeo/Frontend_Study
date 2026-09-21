@@ -8,39 +8,48 @@ import Tometa_icon from "../assets/tometa_icon.png";
 
 const WALLPAPER = "/images/wallpaper.png";
 
-// 프로젝트 외 바탕화면 아이콘 이미지 (정사각형, 투명 PNG 추천)
-// 예: "/images/icons/about.png"
-const ABOUT_ICON =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#fffbe0"/><text x="64" y="56" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', sans-serif" font-size="26" font-weight="800" fill="#0e17c9">About</text><text x="64" y="88" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', sans-serif" font-size="26" font-weight="800" fill="#0e17c9">ME</text></svg>`,
+// 프로젝트 외 바탕화면 아이콘 이미지: 같은 스타일(폰트·글자색·모서리)로 통일하고
+// 배경색만 아이콘마다 다르게 줘서 하나의 디자인 세트처럼 보이게 했어요.
+function badgeIcon(bg, lines) {
+  const startY = lines.length === 1 ? 74 : 56;
+  const text = lines
+    .map(
+      (line, i) =>
+        `<text x="64" y="${startY + i * 32}" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', sans-serif" font-size="26" font-weight="800" fill="#0e17c9">${line}</text>`,
+    )
+    .join("");
+  return (
+    "data:image/svg+xml," +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="${bg}"/>${text}</svg>`,
+    )
   );
-const VELOG_ICON = "https://placehold.co/128x128/d8f5e6/0e17c9?text=Velog";
-const GITHUB_ICON = "https://placehold.co/128x128/e5e5e5/111111?text=GitHub";
+}
+
+const ABOUT_ICON = badgeIcon("#fffbe0", ["About", "ME"]);
+const VELOG_ICON = badgeIcon("#d8f5e6", ["Velog"]);
+const GITHUB_ICON = badgeIcon("#e4e4f5", ["GitHub"]);
 // 아이콘(Velog, GitHub)에서 쓰는 링크
 const PROFILE = {
   velog: "https://velog.io/@jiyoeo",
   github: "https://github.com/jiyoeo",
 };
 
-const MEMO_TEXT = `안녕하세요!
-방문해주셔서 감사합니다.
+const MEMO_TEXT = `안녕하세요,
+사용자 경험을 고민하는 프론트엔드 개발자 김지연입니다.
 
-웹 프론트엔드를 학습하고 있는 학생 김지연입니다.
-단순히 화면을 만드는 것을 넘어서 사용자 경험을 고려하여
-직관적인 인터페이스를 구현하는 개발자가 되고 싶어요.
+단순히 화면을 구현하는 것을 넘어,
+직관적이고 완성도 높은 인터페이스를 통해
+최적의 사용자 경험을 전달하는 개발자를 지향합니다.
 
-바탕화면의 폴더를 두 번 클릭하면
-지금까지 진행한 프로젝트를 볼 수 있어요.
+바탕화면의 아이콘을 두 번 클릭하시면
+그동안 진행해 온 프로젝트를 확인하실 수 있습니다.
 
-깃허브: https://github.com/jiyoeo
-벨로그: https://velog.io/@jiyoeo
-
-편하게 연락 주세요 :
-jiyoeo2@gmail.com
-010-8619-6763
-
-김지연`;
+[Links & Contact]
+GitHub: https://github.com/jiyoeo
+Velog: https://velog.io/@jiyoeo
+Email: jiyoeo2@gmail.com
+Phone: 010-8619-6763`;
 
 // 바탕화면 아이콘 = 프로젝트. 배열에 객체를 추가/삭제하면 아이콘도 같이 늘고 줄어요.
 const PROJECTS = [
@@ -165,8 +174,8 @@ function Clock() {
   const mm = String(now.getMinutes()).padStart(2, "0");
 
   return (
-    <span>
-      {month} {day} {weekday}. {hh}:{mm}
+    <span className="text-xs text-black font-bold">
+      {month} {day} {weekday} {hh}:{mm}
     </span>
   );
 }
@@ -247,8 +256,8 @@ function DesktopWindow({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className={`flex h-7 shrink-0 cursor-grab touch-none select-none items-center gap-2 border-b border-black px-2 active:cursor-grabbing ${
-          memo ? "bg-[#fff4a3]" : "bg-black/20"
+        className={`flex h-7 shrink-0 cursor-grab touch-none select-none items-center gap-2  px-2 active:cursor-grabbing ${
+          memo ? "bg-[#fff4a3]" : "bg-black/8"
         }`}
       >
         <button
@@ -314,7 +323,7 @@ function ProjectBody({ project: p }) {
       <img
         src={p.image}
         alt={`${p.title} 스크린샷`}
-        className="block h-auto w-full rounded-[4px] border border-black"
+        className="block h-auto w-full rounded-[4px] border border-gray"
       />
 
       <div>
@@ -352,7 +361,7 @@ function ProjectBody({ project: p }) {
               href={p.github}
               target="_blank"
               rel="noreferrer"
-              className="rounded-[4px] border border-black bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:bg-[#ecdff2]"
+              className="rounded-[4px] border border-black bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0_rgba(0,0,0,0.25)] "
             >
               GitHub ↗
             </a>
@@ -362,7 +371,7 @@ function ProjectBody({ project: p }) {
               href={p.demo}
               target="_blank"
               rel="noreferrer"
-              className="rounded-[4px] border border-black bg-[#ffc7d8] px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:bg-[#0b12a3]"
+              className="rounded-[4px] border border-black bg-[#ecdff2] px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:bg-[#d8a4ef]"
             >
               Site ↗
             </a>
