@@ -6,7 +6,7 @@ import BeneFitU_icon from "../assets/benefitu_icon.svg";
 import Tometa from "../assets/tometa.png";
 import Tometa_icon from "../assets/tometa_icon.png";
 
-const WALLPAPER = "./public/images/wallpaper.png";
+const WALLPAPER = "/images/wallpaper.png";
 
 // 프로젝트 외 바탕화면 아이콘 이미지 (정사각형, 투명 PNG 추천)
 // 예: "/images/icons/about.png"
