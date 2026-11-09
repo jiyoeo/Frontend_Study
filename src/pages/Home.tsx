@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent, ReactNode } from "react";
+import { useThemeStore } from "../store/themeStore";
 import Zooting from "../assets/zooting.png";
 import Zooting_icon from "../assets/zooting_icon.webp";
+import Teamplanit from "../assets/teamplanit.png";
+import Teamplanit_icon from "../assets/teamplanit_icon.png";
 import BeneFitU from "../assets/benefitu.png";
 import BeneFitU_icon from "../assets/benefitu_icon.svg";
 import Tometa from "../assets/tometa.png";
@@ -10,12 +14,12 @@ const WALLPAPER = "/images/wallpaper.png";
 
 // 프로젝트 외 바탕화면 아이콘 이미지: 같은 스타일(폰트·글자색·모서리)로 통일하고
 // 배경색만 아이콘마다 다르게 줘서 하나의 디자인 세트처럼 보이게 했어요.
-function badgeIcon(bg, lines) {
+function badgeIcon(bg: string, lines: string[], fg = "#0e17c9") {
   const startY = lines.length === 1 ? 74 : 56;
   const text = lines
     .map(
       (line, i) =>
-        `<text x="64" y="${startY + i * 32}" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', sans-serif" font-size="26" font-weight="800" fill="#0e17c9">${line}</text>`,
+        `<text x="64" y="${startY + i * 32}" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', sans-serif" font-size="26" font-weight="800" fill="${fg}">${line}</text>`,
     )
     .join("");
   return (
@@ -27,8 +31,11 @@ function badgeIcon(bg, lines) {
 }
 
 const ABOUT_ICON = badgeIcon("#fffbe0", ["About", "ME"]);
+const ABOUT_ICON_DARK = badgeIcon("#3a3520", ["About", "ME"], "#9aa0ff");
 const VELOG_ICON = badgeIcon("#d8f5e6", ["Velog"]);
+const VELOG_ICON_DARK = badgeIcon("#1f3329", ["Velog"], "#9aa0ff");
 const GITHUB_ICON = badgeIcon("#e4e4f5", ["GitHub"]);
+const GITHUB_ICON_DARK = badgeIcon("#2a2a3d", ["GitHub"], "#9aa0ff");
 // 아이콘(Velog, GitHub)에서 쓰는 링크
 const PROFILE = {
   velog: "https://velog.io/@jiyoeo",
@@ -52,7 +59,36 @@ Email: jiyoeo2@gmail.com
 Phone: 010-8619-6763`;
 
 // 바탕화면 아이콘 = 프로젝트. 배열에 객체를 추가/삭제하면 아이콘도 같이 늘고 줄어요.
-const PROJECTS = [
+interface Project {
+  id: string;
+  icon: string;
+  fileName: string;
+  title: string;
+  period: string;
+  role: string;
+  image: string;
+  description: string;
+  features: string[];
+  stack: string[];
+  github: string;
+  demo: string;
+}
+
+interface DesktopIconData {
+  id: string;
+  label: string;
+  image: string;
+  href?: string;
+  darkImage?: string;
+  compact?: boolean;
+}
+
+interface Pos {
+  x: number;
+  y: number;
+}
+
+const PROJECTS: Project[] = [
   {
     id: "project-1",
     // 아이콘 이미지 (정사각형, 투명 PNG 추천). 예: "/images/icons/project-1.png"
@@ -70,6 +106,25 @@ const PROJECTS = [
   },
   {
     id: "project-2",
+    icon: Teamplanit_icon,
+    fileName: "Teamplan-it",
+    title: "Teamplan-it",
+    period: "2026.05 – 2026.05",
+    role: "프론트엔드 · 팀 프로젝트 · 아이디어톤 2차 예선 진출",
+    image: Teamplanit,
+    description:
+      "Teamplan-it는 기존 팀장이 수행하던 핵심 관리 업무인 역할 분배, 진척도 추적, 갈등 조율 및 피드백 전달 등을 AI 시스템이 자동화하고 보조하는 AI 기반 팀 프로젝트 관리 서비스입니다.",
+    features: [
+      "AI 기반 역할 분배",
+      "팀플 일정 및 진척도 관리",
+      "AI 채팅을 통한 진척도 업데이트 및 조언",
+    ],
+    stack: ["React", "Vercel", "TypeScript", "Tailwind"],
+    github: "",
+    demo: "",
+  },
+  {
+    id: "project-3",
     icon: BeneFitU_icon,
     fileName: "BeneFitU",
     title: "BeneFitU",
@@ -84,7 +139,7 @@ const PROJECTS = [
     demo: "https://benefitu-likelion.vercel.app/",
   },
   {
-    id: "project-3",
+    id: "project-4",
     icon: Tometa_icon,
     fileName: "낫트데이",
     title: "낫트데이 (Not Trouble Day)",
@@ -115,17 +170,25 @@ const MENU_H = 28; // 상단 메뉴바 높이(px)
 const FONT =
   '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif';
 
-const clamp = (v, min, max) => Math.min(Math.max(v, min), Math.max(min, max));
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(Math.max(v, min), Math.max(min, max));
 
 // 바탕화면 아이콘 = 프로젝트 + 자기소개/Velog/GitHub. 위치는 자유롭게 드래그로 바꿀 수 있어요.
 // compact: true인 아이콘은 살짝 작게 + 둥근 사각형으로 표시돼요.
-const ICONS = [
+const ICONS: DesktopIconData[] = [
   ...PROJECTS.map((p) => ({ id: p.id, label: p.title, image: p.icon })),
-  { id: "about", label: "자기소개.txt", image: ABOUT_ICON, compact: true },
+  {
+    id: "about",
+    label: "자기소개.txt",
+    image: ABOUT_ICON,
+    darkImage: ABOUT_ICON_DARK,
+    compact: true,
+  },
   {
     id: "velog",
     label: "Velog ↗",
     image: VELOG_ICON,
+    darkImage: VELOG_ICON_DARK,
     href: PROFILE.velog,
     compact: true,
   },
@@ -133,6 +196,7 @@ const ICONS = [
     id: "github",
     label: "GitHub ↗",
     image: GITHUB_ICON,
+    darkImage: GITHUB_ICON_DARK,
     href: PROFILE.github,
     compact: true,
   },
@@ -142,11 +206,11 @@ const ICON_W = 88; // 아이콘 가로 칸 크기(px)
 const ICON_H = 96; // 아이콘 세로 칸 크기(px)
 
 // 아이콘 처음 위치: 오른쪽 위부터 세로로 쌓고, 화면이 낮으면 다음 줄(왼쪽)로 넘어가요.
-function defaultIconPositions(ids) {
+function defaultIconPositions(ids: string[]) {
   const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const rows = Math.max(3, Math.floor((vh - MENU_H - 24) / ICON_H));
-  const pos = {};
+  const pos: Record<string, Pos> = {};
   ids.forEach((id, i) => {
     const col = Math.floor(i / rows);
     const row = i % rows;
@@ -174,16 +238,18 @@ function Clock() {
   const mm = String(now.getMinutes()).padStart(2, "0");
 
   return (
-    <span className="text-xs text-black font-bold">
+    <span className="text-xs font-bold text-black dark:text-white">
       {month} {day} {weekday} {hh}:{mm}
     </span>
   );
 }
 
-function MenuBar({ onOpenAbout }) {
+function MenuBar({ onOpenAbout }: { onOpenAbout: () => void }) {
+  const dark = useThemeStore((s) => s.dark);
+  const toggle = useThemeStore((s) => s.toggle);
   return (
     <header
-      className="absolute inset-x-0 top-0 z-[1000] flex items-center justify-between  bg-black/20 px-3 text-xs backdrop-blur"
+      className="absolute inset-x-0 top-0 z-[1000] flex items-center justify-between  bg-black/20 px-3 text-xs backdrop-blur dark:bg-white/10 dark:text-white"
       style={{ height: MENU_H }}
     >
       <nav className="flex items-center gap-4">
@@ -200,12 +266,34 @@ function MenuBar({ onOpenAbout }) {
           </span>
         ))}
       </nav>
-      <Clock />
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={dark ? "라이트 모드로 전환" : "다크 모드로 전환"}
+          aria-pressed={dark}
+          className="cursor-pointer text-sm leading-none hover:opacity-70"
+        >
+          {dark ? "☀️" : "🌙"}
+        </button>
+        <Clock />
+      </div>
     </header>
   );
 }
 
 /* ---------- 드래그 가능한 창 ---------- */
+interface DesktopWindowProps {
+  title: string;
+  initial: Pos;
+  width: number;
+  z: number;
+  onFocus: () => void;
+  onClose: () => void;
+  children: ReactNode;
+  memo?: boolean;
+}
+
 function DesktopWindow({
   title,
   initial,
@@ -215,16 +303,21 @@ function DesktopWindow({
   onClose,
   children,
   memo = false,
-}) {
+}: DesktopWindowProps) {
   const [pos, setPos] = useState(initial);
-  const drag = useRef(null);
+  const drag = useRef<{
+    sx: number;
+    sy: number;
+    ox: number;
+    oy: number;
+  } | null>(null);
 
-  const handlePointerDown = (e) => {
-    if (e.target.closest("button")) return;
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button")) return;
     drag.current = { sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
-  const handlePointerMove = (e) => {
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
     if (!drag.current) return;
     const { sx, sy, ox, oy } = drag.current;
     setPos({
@@ -241,7 +334,9 @@ function DesktopWindow({
       onPointerDown={onFocus}
       onClick={(e) => e.stopPropagation()}
       className={`win-open absolute flex flex-col overflow-hidden rounded-[6px] border border-black shadow-[5px_5px_0_rgba(0,0,0,0.28)] ${
-        memo ? "bg-[#fff4a3]" : "bg-white"
+        memo
+          ? "bg-[#fff4a3] dark:border-white/40 dark:bg-[#3a3520]"
+          : "bg-white dark:border-white/40 dark:bg-neutral-800 dark:text-gray-100"
       }`}
       style={{
         left: pos.x,
@@ -257,14 +352,16 @@ function DesktopWindow({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         className={`flex h-7 shrink-0 cursor-grab touch-none select-none items-center gap-2  px-2 active:cursor-grabbing ${
-          memo ? "bg-[#fff4a3]" : "bg-black/8"
+          memo
+            ? "bg-[#fff4a3] dark:bg-[#3a3520] dark:text-gray-100"
+            : "bg-black/8 dark:bg-white/10"
         }`}
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="창 닫기"
-          className="flex h-4 w-4 shrink-0 select-none items-center justify-center text-sm font-bold leading-none text-black hover:text-[#0e17c9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e17c9]"
+          className="flex h-4 w-4 shrink-0 select-none items-center justify-center text-sm font-bold leading-none text-black hover:text-[#0e17c9] dark:text-white dark:hover:text-[#9aa0ff] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e17c9]"
         >
           ×
         </button>
@@ -285,7 +382,7 @@ function DesktopWindow({
 const LINK_RE = /(https?:\/\/[^\s]+|[\w.+-]+@[\w-]+\.[\w.-]+)/g;
 
 // 글 속의 메일/URL을 클릭 가능한 링크로 바꿔줘요
-function Linkify({ text }) {
+function Linkify({ text }: { text: string }) {
   return text.split(LINK_RE).map((part, i) => {
     if (i % 2 === 0) return part; // 짝수 = 일반 글, 홀수 = 링크
     const isMail = !part.startsWith("http");
@@ -294,7 +391,7 @@ function Linkify({ text }) {
         key={i}
         href={isMail ? `mailto:${part}` : part}
         {...(isMail ? {} : { target: "_blank", rel: "noreferrer" })}
-        className="text-[#0e17c9] underline"
+        className="text-[#0e17c9] underline dark:text-[#9aa0ff]"
       >
         {part}
       </a>
@@ -304,12 +401,12 @@ function Linkify({ text }) {
 
 function AboutBody() {
   return (
-    <div className="min-w-0 bg-[#fffad8] px-3 py-4 text-[13px] leading-6 text-gray-900">
+    <div className="min-w-0 bg-[#fffad8] px-3 py-4 text-[13px] leading-6 text-gray-900 dark:bg-[#3a3520] dark:text-gray-100">
       <p className="min-w-0 whitespace-pre-wrap break-words">
         <Linkify text={MEMO_TEXT.trim()} />
         <span
           aria-hidden="true"
-          className="caret ml-1 inline-block h-[1.1em] w-[2px] translate-y-[3px] bg-black"
+          className="caret ml-1 inline-block h-[1.1em] w-[2px] translate-y-[3px] bg-black dark:bg-white"
         />
       </p>
     </div>
@@ -317,18 +414,18 @@ function AboutBody() {
 }
 
 /* ---------- 창 안쪽: 프로젝트 상세 ---------- */
-function ProjectBody({ project: p }) {
+function ProjectBody({ project: p }: { project: Project }) {
   return (
-    <div className="space-y-3 p-4 text-[13px] leading-relaxed text-gray-900">
+    <div className="space-y-3 p-4 text-[13px] leading-relaxed text-gray-900 dark:text-gray-100">
       <img
         src={p.image}
         alt={`${p.title} 스크린샷`}
-        className="block h-auto w-full rounded-[4px] border border-gray"
+        className="block h-auto w-full rounded-[4px] border border-gray-300 dark:border-gray-600"
       />
 
       <div>
         <h2 className="text-lg font-extrabold leading-tight">{p.title}</h2>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-gray-600 dark:text-gray-400">
           {p.period} / {p.role}
         </p>
       </div>
@@ -347,7 +444,7 @@ function ProjectBody({ project: p }) {
         {p.stack.map((s) => (
           <li
             key={s}
-            className="rounded-[3px] border border-black bg-[#ecdff2] px-1.5 py-0.5 text-xs"
+            className="rounded-[3px] border border-black bg-[#ecdff2] px-1.5 py-0.5 text-xs dark:border-white/40 dark:bg-[#4a3a55]"
           >
             {s}
           </li>
@@ -361,7 +458,7 @@ function ProjectBody({ project: p }) {
               href={p.github}
               target="_blank"
               rel="noreferrer"
-              className="rounded-[4px] border border-black bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0_rgba(0,0,0,0.25)] "
+              className="rounded-[4px] border border-black bg-white px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_rgba(0,0,0,0.25)] "
             >
               GitHub ↗
             </a>
@@ -383,20 +480,42 @@ function ProjectBody({ project: p }) {
 }
 
 /* ---------- 바탕화면 아이콘 (자유롭게 드래그 이동) ---------- */
-function DesktopIcon({ icon, pos, selected, onSelect, onActivate, onMove }) {
+interface DesktopIconProps {
+  icon: DesktopIconData;
+  pos: Pos;
+  selected: boolean;
+  onSelect: () => void;
+  onActivate: () => void;
+  onMove: (next: Pos) => void;
+}
+
+function DesktopIcon({
+  icon,
+  pos,
+  selected,
+  onSelect,
+  onActivate,
+  onMove,
+}: DesktopIconProps) {
+  const dark = useThemeStore((s) => s.dark);
   const coarse =
     typeof window !== "undefined" &&
     window.matchMedia?.("(pointer: coarse)").matches;
 
-  const drag = useRef(null);
+  const drag = useRef<{
+    sx: number;
+    sy: number;
+    ox: number;
+    oy: number;
+  } | null>(null);
   const moved = useRef(false);
 
-  const handlePointerDown = (e) => {
+  const handlePointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     drag.current = { sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y };
     moved.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
-  const handlePointerMove = (e) => {
+  const handlePointerMove = (e: PointerEvent<HTMLButtonElement>) => {
     if (!drag.current) return;
     const { sx, sy, ox, oy } = drag.current;
     const dx = e.clientX - sx;
@@ -437,20 +556,22 @@ function DesktopIcon({ icon, pos, selected, onSelect, onActivate, onMove }) {
       <span
         className={`flex items-center justify-center rounded-[8px] ${
           icon.compact ? "h-14 w-14" : "h-16 w-16"
-        } ${selected ? "bg-[#797dcd]/25" : ""}`}
+        } ${selected ? "bg-[#797dcd]/25 dark:bg-white/15" : ""}`}
       >
         <img
-          src={icon.image}
+          src={dark && icon.darkImage ? icon.darkImage : icon.image}
           alt=""
           draggable={false}
-          className={`object-contain drop-shadow-[2px_2px_0_rgba(0,0,0,0.25)] ${
+          className={`object-contain dark:brightness-95 dark:saturate-75 drop-shadow-[2px_2px_0_rgba(0,0,0,0.25)] ${
             icon.compact ? "h-12 w-12 rounded-[14px]" : "h-14 w-14"
           }`}
         />
       </span>
       <span
         className={`max-w-full break-words px-1 text-center text-[11px] font-semibold leading-tight ${
-          selected ? "bg-[#555bca] text-white" : "bg-white/30 text-black"
+          selected
+            ? "bg-[#555bca] text-white dark:bg-[#3b3f8f]"
+            : "bg-white/30 text-black dark:bg-black/40 dark:text-white"
         }`}
       >
         {icon.label}
@@ -462,21 +583,22 @@ function DesktopIcon({ icon, pos, selected, onSelect, onActivate, onMove }) {
 /* ---------- 페이지 ---------- */
 export default function Home() {
   const [opened, setOpened] = useState(["about"]); // 마지막 = 맨 위 창
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [iconPos, setIconPos] = useState(() =>
     defaultIconPositions(ICONS.map((icon) => icon.id)),
   );
-  const moveIcon = (id, next) =>
+  const moveIcon = (id: string, next: Pos) =>
     setIconPos((prev) => ({ ...prev, [id]: next }));
 
   const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
-  const startX = (x, w) =>
+  const startX = (x: number, w: number) =>
     Math.max(12, Math.min(x, vw - Math.min(w, vw - 24) - 12));
 
-  const open = (id) =>
+  const open = (id: string) =>
     setOpened((prev) => [...prev.filter((i) => i !== id), id]);
-  const close = (id) => setOpened((prev) => prev.filter((i) => i !== id));
-  const focus = (id) =>
+  const close = (id: string) =>
+    setOpened((prev) => prev.filter((i) => i !== id));
+  const focus = (id: string) =>
     setOpened((prev) =>
       prev[prev.length - 1] === id
         ? prev
@@ -484,7 +606,10 @@ export default function Home() {
     );
 
   // 창 정의
-  const windows = {
+  const windows: Record<
+    string,
+    { title: string; width: number; initial: Pos; content: ReactNode }
+  > = {
     about: {
       title: "자기소개.txt",
       width: 380,
@@ -504,18 +629,19 @@ export default function Home() {
     ),
   };
 
-  const activate = (icon) => {
+  const activate = (icon: DesktopIconData) => {
     if (icon.href) {
-      if (icon.href.startsWith("mailto:")) window.location.href = icon.href;
-      else window.open(icon.href, "_blank", "noopener,noreferrer");
+      window.open(icon.href, "_blank", "noopener,noreferrer");
     } else {
       open(icon.id);
     }
   };
 
-  const wallpaperStyle = WALLPAPER
+  const dark = useThemeStore((s) => s.dark);
+
+  const wallpaperStyle: CSSProperties = WALLPAPER
     ? {
-        backgroundImage: `url(${WALLPAPER})`,
+        backgroundImage: `${dark ? "linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), " : ""}url(${WALLPAPER})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }
